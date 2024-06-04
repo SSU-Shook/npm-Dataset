@@ -57,6 +57,17 @@ def get_js_file_list(directory_path):
 
 
 
+def get_js_file_list_without_fixed(directory_path):
+    '''
+    특정 경로의 디렉터리에서 .js 파일 리스트를 재귀적으로 탐색하여 반환한다.
+    대신, fixed가 붙은건 제외한다.
+    '''
+    file_list = []
+    for path in glob.iglob(f'{directory_path}/**/*.js', recursive=True):
+        if 'fixed' not in os.path.basename(path):
+            file_list.append({"filename": os.path.basename(path), "path":path})
+    return file_list
+
 
 
 def get_file_list_from_path_list(path_list):
