@@ -64,6 +64,21 @@ def set_dataset_with_csv():
 def main():
 
     '''
+    zero-shot 패치 실험
+    1. 데이터셋 csv를 통해서 취약점 줄에 comment를 추가한다.
+    2. zero-shot 패치를 진행한다.
+
+    RAG fine-tuning을 이용한 취약점 패치 실험
+    1. 데이터셋 csv를 통해서 취약점 줄에 comment를 추가한다.
+    2. 해당 취약점에 대한 CWE 외부 정보 langchain(보류) RAG fine-tuning을 진행한다.
+    3. 취약점 코드에 패치를 적용한다.
+
+    zeroshot 패치와 RAG fine-tuning 패치의 성능을 비교한다.
+    1. 취약점 패치 성공률
+    2. ?
+    '''
+
+    '''
     변수 선언
     '''
     # codeql csv 파일의 경로
