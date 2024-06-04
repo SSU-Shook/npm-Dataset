@@ -38,13 +38,12 @@ def get_parent_directory(path):
     '''
     return os.path.abspath(os.path.join(path, os.pardir))
 
-# def set_dataset_with_csv()
-
-def main():
+def set_dataset_with_csv():
+    '''
+    실험할 데이터셋을 설정한다.
+    '''
 
     os.makedirs(CODEQL_DB_PATH, exist_ok=True)
-
-    # cwe = 'CWE-022'
     
     for cwe in CWE_NUMBER:
         cwe_path_list = get_data_list(cwe)
@@ -62,6 +61,7 @@ def main():
                 os.system(command2)   
                 print(command2)
 
+def main():
 
     '''
     변수 선언
