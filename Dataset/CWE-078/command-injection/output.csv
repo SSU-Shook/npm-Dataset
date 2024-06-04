@@ -1,0 +1,1 @@
+"Uncontrolled command line","Using externally controlled strings in a command line may allow a malicious user to change the meaning of the command.","error","This command line depends on a [[""user-provided value""|""relative:///command-injection.js:6:26:6:32""]].","/command-injection.js","8","17","8","31"

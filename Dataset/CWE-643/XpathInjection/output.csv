@@ -1,0 +1,1 @@
+"XPath injection","Building an XPath expression from user-controlled sources is vulnerable to insertion of malicious code by the user.","error","XPath expression depends on a [[""user-provided value""|""relative:///XpathInjection.js:6:18:6:38""]].","/XpathInjection.js","9","34","9","96"

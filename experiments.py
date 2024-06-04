@@ -38,6 +38,8 @@ def get_parent_directory(path):
     '''
     return os.path.abspath(os.path.join(path, os.pardir))
 
+# def set_dataset_with_csv()
+
 def main():
 
     os.makedirs(CODEQL_DB_PATH, exist_ok=True)
@@ -51,7 +53,7 @@ def main():
             for data in filename_path_data:
                 db_path = CODEQL_DB_PATH + '/' + data['filename'].split('.')[0]
                 os.makedirs(db_path, exist_ok=True)
-                command = CODEQL_CREATE_COMMAND.format(db_path=db_path, src_path=data['path'])
+                command = CODEQL_CREATE_COMMAND.format(db_path=db_path, src_path=get_parent_directory(data['path']))
                 print(command)
                 os.system(command)
 

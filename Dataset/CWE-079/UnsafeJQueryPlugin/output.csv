@@ -1,0 +1,1 @@
+"Unsafe jQuery plugin","A jQuery plugin that unintentionally constructs HTML from some of its options may be unsafe to use for clients.","warning","Potential XSS vulnerability in the [[""'$.fn.copyText' plugin""|""relative:///UnsafeJQueryPlugin.js:1:22:6:1""]].","/UnsafeJQueryPlugin.js","3","22","3","43"

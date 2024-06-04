@@ -1,0 +1,1 @@
+"Remote property injection","Allowing writes to arbitrary properties of an object may lead to denial-of-service attacks.","warning","A property name to write to depends on a [[""user-provided value""|""relative:///RemotePropertyInjection.js:7:13:7:36""]].","/RemotePropertyInjection.js","8","8","8","11"

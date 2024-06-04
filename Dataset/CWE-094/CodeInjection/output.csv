@@ -1,0 +1,1 @@
+"Code injection","Interpreting unsanitized user input as code allows a malicious user arbitrary code execution.","error","This code execution depends on a [[""user-provided value""|""relative:///CodeInjection.js:1:6:1:27""]].","/CodeInjection.js","1","6","1","83"
