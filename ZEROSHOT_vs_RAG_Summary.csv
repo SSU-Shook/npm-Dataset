@@ -1,0 +1,10 @@
+Issue,Severity,Count
+Code injection,error,1
+Exception text reinterpreted as HTML,warning,1
+Improper code sanitization,error,1
+Prototype-polluting assignment,warning,1
+Remote property injection,warning,3
+Resources exhaustion from deep object traversal,warning,1
+Second order command injection,error,1
+Uncontrolled command line,error,1
+XPath injection,error,1

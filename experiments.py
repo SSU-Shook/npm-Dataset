@@ -35,7 +35,7 @@ from langchain.prompts.chat import (
 CWE_NUMBER = ['CWE-022', 'CWE-078', 'CWE-079', 'CWE-094', 'CWE-400', 'CWE-643', 'CWE-915']
 CODEQL_DB_PATH = 'codeql-db'
 CODEQL_QL_PATH = '/codeql/codeql-repo/javascript/ql/src/Security/{cwe_number}'
-CODEQL_QL_PATH2 = '/codeql/codeql-repo/javascript/ql/src/Security/'
+CODEQL_QL_PATH2 = '/codeql/codeql-repo/javascript/ql/src/Security/experiments'
 # CODEQL_QL_PATH = '/codeql/codeql-repo/javascript/ql/src/Security/CWE-078'
 CODEQL_CREATE_COMMAND = 'codeql database create --language=javascript --overwrite {db_path} --source-root={src_path}'
 CODEQL_ANALYSIS_COMMAND = 'codeql database analyze {db_path} {ql_path} --format=csv --output={output_path} --threads=16'
@@ -294,29 +294,62 @@ def check_time():
                 json.dump(patched_vulnerabilities, f)
 
 def compare_time():
+    total_rag_time = 0
+    total_zero_time = 0
+    rag_count = 0
+    zero_count = 0
+    faster_rag_count = 0
+    faster_zero_count = 0
+    
     for cwe in tqdm(CWE_NUMBER):
         cwe_path_list = get_data_list(cwe)
         for vuln_type in cwe_path_list:
             project_path = vuln_type
             dirname = project_path.split('/')[-1]
 
-            with open(f'rag_results/{dirname}.json', 'r') as f1:
-                rag_vulnerabilities = json.load(f1)
-            with open(f'zero_results/{dirname}.json', 'r') as f2:
-                zero_vulnerabilities = json.load(f2)
-            
             try:
-                print(f'[*] {dirname}')
+                with open(f'rag_results/{dirname}.json', 'r') as f1:
+                    rag_vulnerabilities = json.load(f1)
+                with open(f'zero_results/{dirname}.json', 'r') as f2:
+                    zero_vulnerabilities = json.load(f2)
+
                 rag_patch_time = rag_vulnerabilities['patched_files']['patch_time']
                 zero_patch_time = zero_vulnerabilities['patched_files']['patch_time']
+
+                print(f'[*] {dirname}')
                 print(f'Execution Time Comparison for {dirname}')
                 print('-' * 40)
                 print(f'RAG Vulnerabilities Patch Time: {rag_patch_time:.2f} seconds')
                 print(f'Zero Vulnerabilities Patch Time: {zero_patch_time:.2f} seconds')
                 print('-' * 40)
                 print(f'Difference in Patch Time: {abs(rag_patch_time - zero_patch_time):.2f} seconds')
-            except:
-                pass
+
+                total_rag_time += rag_patch_time
+                total_zero_time += zero_patch_time
+                rag_count += 1
+                zero_count += 1
+
+                if rag_patch_time < zero_patch_time:
+                    faster_rag_count += 1
+                elif zero_patch_time < rag_patch_time:
+                    faster_zero_count += 1
+
+            except Exception as e:
+                print(f'Error processing {dirname}: {e}')
+                continue
+
+    if rag_count > 0 and zero_count > 0:
+        avg_rag_time = total_rag_time / rag_count
+        avg_zero_time = total_zero_time / zero_count
+
+        print(f'Total RAG Execution Time: {total_rag_time:.2f} seconds')
+        print(f'Total Zero Execution Time: {total_zero_time:.2f} seconds')
+        print(f'Average RAG Execution Time: {avg_rag_time:.2f} seconds')
+        print(f'Average Zero Execution Time: {avg_zero_time:.2f} seconds')
+        print(f'RAG was faster {faster_rag_count} times')
+        print(f'Zero was faster {faster_zero_count} times')
+    else:
+        print('No valid data to compare execution times')
 
 def load_json(filepath):
     with open(filepath, 'r') as f:
@@ -392,28 +425,29 @@ def re_codeql_analysis():
     command = CODEQL_CREATE_COMMAND.format(db_path=db_path, src_path='code_comparison')
     print(command)
     os.system(command)
-    command2 = CODEQL_ANALYSIS_COMMAND.format(db_path=db_path, ql_path=CODEQL_QL_PATH2, output_path='./code_comparison/output.csv')
+    command2 = CODEQL_ANALYSIS_COMMAND.format(db_path=db_path, ql_path=CODEQL_QL_PATH2, output_path='./code_comparison/output2.csv')
     print(command2)
     os.system(command2)
 
+def read_output_csv():
+    zero = 0
+    rag = 0
+    with open('code_comparison/output2.csv', 'r') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            for i in range(len(row)):
+                if 'zero_patched' in row[i]:
+                    zero += 1
+                    break
+                elif 'rag_patched' in row[i]:
+                    rag += 1
+                    break
 
-    # for path in cwe_path_list:
-    #     filename_path_data = get_js_file_list_without_fixed(path)
-    #     for data in filename_path_data:
-    #         db_path = CODEQL_DB_PATH + '/' + data['filename'].split('.')[0]
-    #         os.makedirs(db_path, exist_ok=True)
-    #         command = CODEQL_CREATE_COMMAND.format(db_path=db_path, src_path=get_parent_directory(data['path']))
-    #         print(command)
-    #         os.system(command)
-
-    #         ql_path = CODEQL_QL_PATH.format(cwe_number=cwe)
-    #         command2 = CODEQL_ANALYSIS_COMMAND.format(db_path=db_path, ql_path=ql_path, output_path=get_parent_directory(data['path']) + '/output.csv')
-    #         os.system(command2)   
-    #         print(command2)
-
+    print(f'Zero: {zero}')
+    print(f'RAG: {rag}')                
 
 def main():
-    re_codeql_analysis()
+    read_output_csv()
 
 
 if __name__ == "__main__":
