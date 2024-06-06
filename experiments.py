@@ -35,6 +35,7 @@ from langchain.prompts.chat import (
 CWE_NUMBER = ['CWE-022', 'CWE-078', 'CWE-079', 'CWE-094', 'CWE-400', 'CWE-643', 'CWE-915']
 CODEQL_DB_PATH = 'codeql-db'
 CODEQL_QL_PATH = '/codeql/codeql-repo/javascript/ql/src/Security/{cwe_number}'
+CODEQL_QL_PATH2 = '/codeql/codeql-repo/javascript/ql/src/Security/'
 # CODEQL_QL_PATH = '/codeql/codeql-repo/javascript/ql/src/Security/CWE-078'
 CODEQL_CREATE_COMMAND = 'codeql database create --language=javascript --overwrite {db_path} --source-root={src_path}'
 CODEQL_ANALYSIS_COMMAND = 'codeql database analyze {db_path} {ql_path} --format=csv --output={output_path} --threads=16'
@@ -264,13 +265,13 @@ def experiment_rag(patch_code, cwe_number):
 
     print(response)
 
+from tqdm import tqdm
 
-def main():
-
+def check_time():
     os.makedirs('rag_results', exist_ok=True)
     os.makedirs('zero_results', exist_ok=True)
 
-    for cwe in CWE_NUMBER:
+    for cwe in tqdm(CWE_NUMBER):
         cwe_path_list = get_data_list(cwe)
         for vuln_type in cwe_path_list:
             project_path = vuln_type
@@ -291,6 +292,128 @@ def main():
 
             with open(f'zero_results/{dirname}.json', 'w') as f:
                 json.dump(patched_vulnerabilities, f)
+
+def compare_time():
+    for cwe in tqdm(CWE_NUMBER):
+        cwe_path_list = get_data_list(cwe)
+        for vuln_type in cwe_path_list:
+            project_path = vuln_type
+            dirname = project_path.split('/')[-1]
+
+            with open(f'rag_results/{dirname}.json', 'r') as f1:
+                rag_vulnerabilities = json.load(f1)
+            with open(f'zero_results/{dirname}.json', 'r') as f2:
+                zero_vulnerabilities = json.load(f2)
+            
+            try:
+                print(f'[*] {dirname}')
+                rag_patch_time = rag_vulnerabilities['patched_files']['patch_time']
+                zero_patch_time = zero_vulnerabilities['patched_files']['patch_time']
+                print(f'Execution Time Comparison for {dirname}')
+                print('-' * 40)
+                print(f'RAG Vulnerabilities Patch Time: {rag_patch_time:.2f} seconds')
+                print(f'Zero Vulnerabilities Patch Time: {zero_patch_time:.2f} seconds')
+                print('-' * 40)
+                print(f'Difference in Patch Time: {abs(rag_patch_time - zero_patch_time):.2f} seconds')
+            except:
+                pass
+
+def load_json(filepath):
+    with open(filepath, 'r') as f:
+        return json.load(f)
+
+def read_file(filepath):
+    with open(filepath, 'r') as f:
+        return f.read()
+
+def compare_code():
+    os.makedirs('code_comparison', exist_ok=True)
+    for cwe in tqdm(CWE_NUMBER):
+        cwe_path_list = get_data_list(cwe)
+        for vuln_type in cwe_path_list:
+            project_path = vuln_type
+            dirname = project_path.split('/')[-1]
+
+            with open(f'rag_results/{dirname}.json', 'r') as f1:
+                rag_vulnerabilities = json.load(f1)
+            with open(f'zero_results/{dirname}.json', 'r') as f2:
+                zero_vulnerabilities = json.load(f2)
+            
+            try:
+                print(f'[*] {dirname}')
+                rag_patched_path = rag_vulnerabilities['patched_files'].get(next(iter(rag_vulnerabilities['patched_files'])), None)
+                zero_patched_path = zero_vulnerabilities['patched_files'].get(next(iter(zero_vulnerabilities['patched_files'])), None)
+                if rag_patched_path and zero_patched_path:
+                    rag_patched_content = read_file(rag_patched_path)
+                    zero_patched_content = read_file(zero_patched_path)
+                    with open(f'code_comparison/{dirname}_rag_patched.js', 'w') as f:
+                        f.write(rag_patched_content)
+                    with open(f'code_comparison/{dirname}_zero_patched.js', 'w') as f1:
+                        f1.write(zero_patched_content)
+                    print(f'Comparing Patched Files for {dirname}')
+                    
+                    print(f'[+] RAG Patched File Path: {rag_patched_path}')
+                    print(rag_patched_content)
+                    print('='*100)
+                    print(f'[-] Zero Patched File Path: {zero_patched_path}')
+                    print(zero_patched_content)
+                else:
+                    print('Could not find patched files in one or both of the JSON files.')
+                
+                print('-'*100)
+                print('-'*100)
+                print('-'*100)
+            except:
+                pass
+
+def get_data():
+    '''
+    코드 재탐지시 내부에 있는 실험할 데이터 리스트를 가져온다.
+    '''
+    path_list = []
+    path = f'code_comparison'
+    for data in glob.glob(path + '/*.js'):
+        path_list.append(data)
+    
+    return path_list
+
+def re_codeql_analysis():
+    '''
+    패치된 파일을 대상으로 다시 취약점 탐지 수행
+    '''
+
+    # code_comparision
+    
+    cwe_path_list = get_data()
+    print(cwe_path_list)
+
+    db_path = 'code_comparison/codeql-db'
+    os.makedirs(db_path, exist_ok=True)
+    command = CODEQL_CREATE_COMMAND.format(db_path=db_path, src_path='code_comparison')
+    print(command)
+    os.system(command)
+    command2 = CODEQL_ANALYSIS_COMMAND.format(db_path=db_path, ql_path=CODEQL_QL_PATH2, output_path='./code_comparison/output.csv')
+    print(command2)
+    os.system(command2)
+
+
+    # for path in cwe_path_list:
+    #     filename_path_data = get_js_file_list_without_fixed(path)
+    #     for data in filename_path_data:
+    #         db_path = CODEQL_DB_PATH + '/' + data['filename'].split('.')[0]
+    #         os.makedirs(db_path, exist_ok=True)
+    #         command = CODEQL_CREATE_COMMAND.format(db_path=db_path, src_path=get_parent_directory(data['path']))
+    #         print(command)
+    #         os.system(command)
+
+    #         ql_path = CODEQL_QL_PATH.format(cwe_number=cwe)
+    #         command2 = CODEQL_ANALYSIS_COMMAND.format(db_path=db_path, ql_path=ql_path, output_path=get_parent_directory(data['path']) + '/output.csv')
+    #         os.system(command2)   
+    #         print(command2)
+
+
+def main():
+    re_codeql_analysis()
 
 
 if __name__ == "__main__":
