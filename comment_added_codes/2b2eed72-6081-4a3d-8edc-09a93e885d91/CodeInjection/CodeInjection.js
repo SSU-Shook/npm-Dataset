@@ -1,0 +1,1 @@
+eval(document.location.href.substring(document.location.href.indexOf("default=")+8)) /*Vulnerability name: Code injection	Vulnerability description: Interpreting unsanitized user input as code allows a malicious user arbitrary code execution.	Vulnerability message: This code execution depends on a [["user-provided value"|"relative:///CodeInjection.js:1:6:1:27"]].*/

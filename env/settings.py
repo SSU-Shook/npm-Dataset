@@ -9,5 +9,5 @@ ASSISTANT_ID = {
     'profile_assistant': 'asst_8J4MBHnqnjzhzAcdED7p1Wxa',
     'patch_assistant': 'asst_DCU9yoVZnnd3UiGmWEyRnbZU',
     'explain_assistant': 'asst_v9hhDr5WMkbWP2kOCFt9ACIM',
-    'rag_assistant': 'asst_WhVw60Fsidp11uQ1R6OdV7Jq'
+    'rag_assistant': 'asst_ZHmXTbLWw056J6YpFRm4Khen'
 }

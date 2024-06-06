@@ -168,6 +168,17 @@ def copy_source_code_files(project_path, project_uuid, vulnerabilities_dict_by_f
     return original_path_copied_path_dict
 
 
+def get_comment_code_save_directory(project_path, directory_name=generate_directory_name()):
+    '''
+    코멘트 코드 디렉터리를 반환한다.
+    '''
+    
+    base_directory_name = os.path.basename(project_path)
+    patched_code_save_directory = os.path.join("comment_added_codes", directory_name)
+    patched_code_save_directory = os.path.join(patched_code_save_directory, base_directory_name)
+    os.makedirs(patched_code_save_directory, exist_ok=True)
+    return patched_code_save_directory
+
 
 def get_patched_code_save_directory(project_path, directory_name=generate_directory_name()):
     '''

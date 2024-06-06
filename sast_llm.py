@@ -16,23 +16,6 @@ from helper_utils import *
 from patch_utils import *
 
 
-'''
-Todo
-# - .js filename list & path to .jsonl file
-# - Upload the codebase
-- Few-shot prompting with example codes
-- query the model for the output
-    - match code style
-    - profiling the code style (e.g. tabWidth, semi, etc.)
-- save the output to a file (e.g. security patch comments, etc.)
-- refactoring the code
-- testing the code (diffing, performance, etc.)
-- translate english to korean or extract comment to korean
-- 클래스화
-'''
-
-
-
 # 스크립트 파일의 절대 경로를 가져옵니다.
 script_directory = os.path.abspath(os.path.dirname(__file__))
 
@@ -41,8 +24,6 @@ os.chdir(script_directory)
 
 # 변경된 작업 디렉터리를 확인합니다.
 # print("현재 작업 디렉터리:", os.getcwd())
-
-
 
 try:
     client = OpenAI(
@@ -355,22 +336,20 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
 
         # print(f'[DEBUG] len(prompt) : {len(prompt)}')
 
-
+        prompt = instructions.prompt_patch_vulnerabilities
 
         '''
         rag 프롬프트 수행
         '''
         if rag:
-            # print('[*] RAG Prompt')
-            rag_prompt = 'This is a description of vulnerability information. Learn the content.\n' + \
-                '**Do nothing in response to this command**' + get_cwe_description(vulnerabilities[0]['name'])
-        
-            # print(f'[DEBUG] len(rag_prompt) : {len(rag_prompt)}')
+            print('[*] rag prompt')
+            prompt = instructions.prompt_patch_vulnerabilities
 
             message = client.beta.threads.messages.create(
                 thread_id=patch_thread.id,
                 role="user",
-                content=rag_prompt,
+                content=prompt,
+                attachments=attachments_list,
             )
 
             patch_run = client.beta.threads.runs.create(
@@ -386,41 +365,41 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
                 status = check_status(patch_run.id, patch_thread.id)
 
             elapsed_time = time.time() - start_time
-            print("[*] RAG")
+            print("[*] Patch")
             print("Elapsed time: {} minutes {} seconds".format(int((elapsed_time) // 60), int((elapsed_time) % 60)))
             print(f'Status: {status}')
             print('-'*50)
+        else:
+            '''
+            Zero-Shot 패치 프롬프트 수행
+            '''
+            print('[*] zero-shot prompt')
+            prompt = instructions.prompt_patch_vulnerabilities
 
-        '''
-        패치 프롬프트 수행
-        '''
+            message = client.beta.threads.messages.create(
+                thread_id=patch_thread.id,
+                role="user",
+                content=prompt,
+                attachments=attachments_list,
+            )
 
-        prompt = instructions.prompt_patch_vulnerabilities
+            patch_run = client.beta.threads.runs.create(
+                thread_id=patch_thread.id,
+                assistant_id=get_assistant_id('patch_assistant')
+            )
 
-        message = client.beta.threads.messages.create(
-            thread_id=patch_thread.id,
-            role="user",
-            content=prompt,
-            attachments=attachments_list,
-        )
+            start_time = time.time()
 
-        patch_run = client.beta.threads.runs.create(
-            thread_id=patch_thread.id,
-            assistant_id=get_assistant_id('patch_assistant')
-        )
-
-        start_time = time.time()
-
-        status = check_status(patch_run.id, patch_thread.id)
-        while status != 'completed':
-            time.sleep(1)
             status = check_status(patch_run.id, patch_thread.id)
+            while status != 'completed':
+                time.sleep(1)
+                status = check_status(patch_run.id, patch_thread.id)
 
-        elapsed_time = time.time() - start_time
-        print("[*] Patch")
-        print("Elapsed time: {} minutes {} seconds".format(int((elapsed_time) // 60), int((elapsed_time) % 60)))
-        print(f'Status: {status}')
-        print('-'*50)
+            elapsed_time = time.time() - start_time
+            print("[*] Patch")
+            print("Elapsed time: {} minutes {} seconds".format(int((elapsed_time) // 60), int((elapsed_time) % 60)))
+            print(f'Status: {status}')
+            print('-'*50)
 
         messages = client.beta.threads.messages.list(
             thread_id=patch_thread.id
@@ -486,6 +465,9 @@ def patch_vulnerabilities(project_path, codeql_csv_path, code_style_profile=None
         # code_patch_result {'patched_files':{원본경로:패치된파일경로, ...}, 'vulnerabilities_by_file':vulnerabilities_dict_by_file} 반환
         
         code_patch_result['patched_files'][code_path] = patched_code_save_path
+        code_patch_result['patched_files']['patch_time'] = elapsed_time
+
+        
 
     code_patch_result['vulnerabilities_by_file'] = vulnerabilities_dict_by_file
 
